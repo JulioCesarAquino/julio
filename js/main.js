@@ -175,9 +175,35 @@
 
 	
 
+	// busca a contagem real de repositórios públicos direto da API do GitHub
+	// e atualiza o data-number antes do contador animar até esse valor.
+	var fetchGithubStats = function() {
+		var $el = $('#github-repo-count');
+		var user = $el.data('github-user');
+		if (!user) return;
+
+		fetch('https://api.github.com/users/' + user)
+			.then(function (res) { return res.ok ? res.json() : null; })
+			.then(function (data) {
+				if (data && typeof data.public_repos === 'number') {
+					$el.attr('data-number', data.public_repos);
+					// se o visitante já rolou até a seção antes da API responder,
+					// o contador já animou usando o valor inicial (0) e não dispara
+					// de novo sozinho — então corrige o número exibido agora.
+					if ($el.text() !== String(data.public_repos)) {
+						$el.animateNumber({ number: data.public_repos }, 800);
+					}
+				}
+			})
+			.catch(function () {
+				// API indisponível/limite de taxa: mantém o valor padrão (0)
+			});
+	}
+	fetchGithubStats();
+
 	var counter = function() {
-		
-		$('#section-counter, .hero-wrap, .ftco-counter, .ftco-about').waypoint( function( direction ) {
+
+		$('#section-counter, .hero-wrap, .ftco-counter, .ftco-about, #projects-section').waypoint( function( direction ) {
 
 			if( direction === 'down' && !$(this.element).hasClass('ftco-animated') ) {
 
@@ -200,6 +226,47 @@
 
 	}
 	counter();
+
+	var skillsAnimation = function() {
+
+		$('#skills-section').waypoint( function( direction ) {
+
+			if( direction === 'down' && !$(this.element).hasClass('skills-animated') ) {
+
+				$(this.element).addClass('skills-animated');
+
+				$('#skills-section .progress-bar').each(function(i){
+					var $bar = $(this);
+					var $label = $bar.find('span');
+					var target = parseInt($bar.attr('aria-valuenow'), 10);
+
+					setTimeout(function () {
+						$bar.animate(
+							{ width: target + '%' },
+							{ duration: 3200, easing: 'easeInQuad' }
+						);
+						$({ value: 0 }).animate(
+							{ value: target },
+							{
+								duration: 3200,
+								easing: 'easeInQuad',
+								step: function () {
+									$label.text(Math.round(this.value) + '%');
+								},
+								complete: function () {
+									$label.text(target + '%');
+								}
+							}
+						);
+					}, i * 120);
+				});
+
+			}
+
+		} , { offset: '85%' } );
+
+	}
+	skillsAnimation();
 
 
 	var contentWayPoint = function() {
